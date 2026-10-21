@@ -1,9 +1,25 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { useMenuStore } from '@/store/menu.store';
-import { filterTree } from '@/lib/tree';
+import { collectAllIds, filterTree, findNode, findParentNode, isDescendant } from '@/lib/tree';
 import { MenuTreeNode } from './MenuTreeNode';
 import { TreeToolbar } from './TreeToolbar';
 import { SearchBox } from './SearchBox';
@@ -24,6 +40,12 @@ export function MenuTree() {
   const setExpandedIds = useMenuStore((state) => state.setExpandedIds);
   const startCreate = useMenuStore((state) => state.startCreate);
   const deleteMenu = useMenuStore((state) => state.deleteMenu);
+  const moveMenu = useMenuStore((state) => state.moveMenu);
+  const reorderMenu = useMenuStore((state) => state.reorderMenu);
+  const addToast = useMenuStore((state) => state.addToast);
+
+  // Drag-and-drop state
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -58,6 +80,75 @@ export function MenuTree() {
     const { filtered } = filterTree([activeRootNode], searchQuery);
     return filtered;
   }, [activeRootNode, searchQuery]);
+
+  // All IDs in active view for dnd sortable context
+  const allItemIds = useMemo(() => {
+    return collectAllIds(filteredTree);
+  }, [filteredTree]);
+
+  // Drag sensors with distance constraint to avoid false drags on click
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const activeDragNode = useMemo(() => {
+    if (!activeDragId) return null;
+    return findNode(tree, activeDragId);
+  }, [activeDragId, tree]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Client-side cycle detection: cannot drop a node into its own descendant
+    if (isDescendant(tree, activeId, overId)) {
+      addToast('error', 'Cannot move a menu into itself or its own descendant');
+      return;
+    }
+
+    const activeParent = findParentNode(tree, activeId);
+    const overParent = findParentNode(tree, overId);
+
+    // If both belong to the same parent => reordering among siblings
+    if (activeParent?.id === overParent?.id) {
+      const siblings = activeParent
+        ? activeParent.children
+        : tree; // root level
+      const overIndex = siblings.findIndex((s) => s.id === overId);
+      if (overIndex !== -1) {
+        await reorderMenu(activeId, overIndex);
+      }
+    } else {
+      // Reparenting to overParent or as child of over node
+      const targetParentId = overParent ? overParent.id : activeRootId;
+      const targetSiblings = overParent
+        ? overParent.children
+        : activeRootNode?.children || [];
+      const targetIndex = targetSiblings.findIndex((s) => s.id === overId);
+
+      await moveMenu(
+        activeId,
+        targetParentId,
+        targetIndex !== -1 ? targetIndex : undefined,
+      );
+    }
+  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -116,34 +207,56 @@ export function MenuTree() {
       {/* Expand / Collapse Toolbar */}
       <TreeToolbar />
 
-      {/* Tree items */}
-      <div
-        role="tree"
-        aria-label="Menu hierarchy"
-        className="mt-2 py-2 pr-4 overflow-x-auto min-h-[300px]"
+      {/* Tree items with Drag-and-Drop */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        {filteredTree.length > 0 ? (
-          filteredTree.map((rootNode) => (
-            <MenuTreeNode
-              key={rootNode.id}
-              node={rootNode}
-              level={0}
-              isLastChild={true}
-              selectedId={selectedId}
-              expandedIds={expandedIds}
-              searchQuery={searchQuery}
-              onSelect={selectMenu}
-              onToggleExpand={toggleExpand}
-              onAddChild={(parentId) => startCreate(parentId)}
-              onDelete={(id, name) => setDeleteTarget({ id, name })}
-            />
-          ))
-        ) : (
-          <div className="py-8 text-center text-sm text-gray-500">
-            No menus matching &quot;{searchQuery}&quot;
+        <SortableContext
+          items={allItemIds}
+          strategy={verticalListSortingStrategy}
+        >
+          <div
+            role="tree"
+            aria-label="Menu hierarchy"
+            className="mt-2 py-2 pr-4 overflow-x-auto min-h-[300px]"
+          >
+            {filteredTree.length > 0 ? (
+              filteredTree.map((rootNode) => (
+                <MenuTreeNode
+                  key={rootNode.id}
+                  node={rootNode}
+                  level={0}
+                  isLastChild={true}
+                  selectedId={selectedId}
+                  expandedIds={expandedIds}
+                  searchQuery={searchQuery}
+                  onSelect={selectMenu}
+                  onToggleExpand={toggleExpand}
+                  onAddChild={(parentId) => startCreate(parentId)}
+                  onDelete={(id, name) => setDeleteTarget({ id, name })}
+                />
+              ))
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No menus matching &quot;{searchQuery}&quot;
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </SortableContext>
+
+        {/* Drag Overlay preview */}
+        <DragOverlay>
+          {activeDragNode ? (
+            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl shadow-lg border border-stk-primary text-stk-primary text-sm font-semibold select-none pointer-events-none">
+              <GripVertical className="w-4 h-4 text-gray-400" />
+              <span>{activeDragNode.name}</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Delete Confirmation Modal */}
       <ConfirmDialog

@@ -128,3 +128,74 @@ export function filterTree(
     ancestorIds,
   };
 }
+
+/**
+ * Checks whether targetId is the parentId itself or a descendant of parentId.
+ * Used for client-side cycle detection before drag-and-drop or move operations.
+ */
+export function isDescendant(
+  nodes: MenuTreeNode[],
+  parentId: string,
+  targetId: string,
+): boolean {
+  if (parentId === targetId) return true;
+
+  const parentNode = findNode(nodes, parentId);
+  if (!parentNode || !parentNode.children) return false;
+
+  function checkChildren(children: MenuTreeNode[]): boolean {
+    for (const child of children) {
+      if (child.id === targetId) return true;
+      if (child.children && child.children.length > 0) {
+        if (checkChildren(child.children)) return true;
+      }
+    }
+    return false;
+  }
+
+  return checkChildren(parentNode.children);
+}
+
+/**
+ * Flattens hierarchical tree into a single array with computed depth.
+ */
+export function flattenTree(
+  nodes: MenuTreeNode[],
+  depth = 0,
+): Array<MenuTreeNode & { depth: number }> {
+  const result: Array<MenuTreeNode & { depth: number }> = [];
+
+  function traverse(list: MenuTreeNode[], currentDepth: number) {
+    for (const item of list) {
+      result.push({ ...item, depth: currentDepth });
+      if (item.children && item.children.length > 0) {
+        traverse(item.children, currentDepth + 1);
+      }
+    }
+  }
+
+  traverse(nodes, depth);
+  return result;
+}
+
+/**
+ * Finds the chain of ancestor IDs leading to targetId (excluding targetId itself).
+ */
+export function findPath(
+  nodes: MenuTreeNode[],
+  targetId: string,
+  currentPath: string[] = [],
+): string[] | null {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return currentPath;
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findPath(node.children, targetId, [...currentPath, node.id]);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}

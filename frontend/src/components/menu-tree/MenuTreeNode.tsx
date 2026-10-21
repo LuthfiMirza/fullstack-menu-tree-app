@@ -1,7 +1,9 @@
 'use client';
 
 import React, { memo } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { MenuTreeNode as MenuTreeNodeType } from '@/types/menu';
 
 interface MenuTreeNodeProps {
@@ -20,7 +22,6 @@ interface MenuTreeNodeProps {
 export const MenuTreeNode = memo(function MenuTreeNode({
   node,
   level,
-  isLastChild,
   selectedId,
   expandedIds,
   searchQuery,
@@ -32,6 +33,30 @@ export const MenuTreeNode = memo(function MenuTreeNode({
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expandedIds.has(node.id);
   const isSelected = selectedId === node.id;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({
+    id: node.id,
+    data: {
+      id: node.id,
+      name: node.name,
+      parentId: node.parentId,
+      level,
+    },
+  });
+
+  const sortableStyle: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.35 : 1,
+  };
 
   // Search text highlighting
   const renderHighlightedName = (name: string, query: string) => {
@@ -54,6 +79,8 @@ export const MenuTreeNode = memo(function MenuTreeNode({
 
   return (
     <div
+      ref={setNodeRef}
+      style={sortableStyle}
       role="treeitem"
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isSelected}
@@ -65,7 +92,7 @@ export const MenuTreeNode = memo(function MenuTreeNode({
           isSelected
             ? 'bg-blue-50/70 text-stk-primary font-semibold'
             : 'hover:bg-gray-50 text-stk-textMain'
-        }`}
+        } ${isOver && !isDragging ? 'ring-2 ring-stk-primary bg-blue-50/30' : ''}`}
         onClick={() => onSelect(node.id)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -75,6 +102,19 @@ export const MenuTreeNode = memo(function MenuTreeNode({
         }}
         tabIndex={0}
       >
+        {/* Drag Handle: visible on hover or mobile, does not interfere with clicks */}
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder or move"
+          aria-label={`Drag ${node.name}`}
+          className="p-1 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 touch-none shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+
         {/* Expand / Collapse Chevron */}
         <div className="w-5 h-5 flex items-center justify-center mr-1 shrink-0">
           {hasChildren ? (
@@ -103,7 +143,7 @@ export const MenuTreeNode = memo(function MenuTreeNode({
           {renderHighlightedName(node.name, searchQuery)}
         </span>
 
-        {/* Hover / Selected Action Buttons: Blue (+) button and Delete trash */}
+        {/* Action Buttons: Blue (+) button and Delete trash */}
         <div
           className={`ml-2 flex items-center gap-1.5 transition-opacity ${
             isSelected

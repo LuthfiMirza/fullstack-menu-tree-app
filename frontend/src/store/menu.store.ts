@@ -330,14 +330,21 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   moveMenu: async (id: string, parentId: string | null, position?: number) => {
+    const prevTree = get().tree;
     set({ isMutating: true });
     try {
       await menuApi.moveMenu(id, { parentId, position });
       get().addToast('success', 'Menu moved successfully');
       await get().fetchTree();
+      if (parentId) {
+        set((state) => ({
+          expandedIds: new Set([...state.expandedIds, parentId]),
+        }));
+      }
       await get().selectMenu(id);
       return true;
     } catch (err: unknown) {
+      set({ tree: prevTree });
       const msg = err instanceof ApiError ? err.message : 'Failed to move menu';
       get().addToast('error', msg);
       return false;
@@ -347,7 +354,27 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   reorderMenu: async (id: string, position: number) => {
-    set({ isMutating: true });
+    const prevTree = get().tree;
+
+    // Helper to optimistically reorder siblings in memory
+    function reorderInList(list: MenuTreeNode[]): MenuTreeNode[] {
+      const idx = list.findIndex((m) => m.id === id);
+      if (idx !== -1) {
+        const item = list[idx];
+        const nextList = list.filter((m) => m.id !== id);
+        const targetPos = Math.max(0, Math.min(position, nextList.length));
+        nextList.splice(targetPos, 0, item);
+        return nextList.map((m, i) => ({ ...m, position: i }));
+      }
+      return list.map((m) => ({
+        ...m,
+        children: m.children ? reorderInList(m.children) : [],
+      }));
+    }
+
+    const optimisticTree = reorderInList(prevTree);
+    set({ tree: optimisticTree, isMutating: true });
+
     try {
       await menuApi.reorderMenu(id, { position });
       get().addToast('success', 'Menu reordered successfully');
@@ -355,6 +382,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       await get().selectMenu(id);
       return true;
     } catch (err: unknown) {
+      set({ tree: prevTree });
       const msg = err instanceof ApiError ? err.message : 'Failed to reorder menu';
       get().addToast('error', msg);
       return false;
