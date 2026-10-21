@@ -45,44 +45,60 @@ export function Sidebar({
     >
       <div>
         {/* Header / Logo */}
-        <div className="flex items-center justify-between px-2 py-3 mb-6">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between px-2 py-3 mb-6">
+            <div className="flex items-center gap-2.5">
               <Image
-                src="/logo.svg"
-                alt="Solusi Teknologi Kreatif"
-                width={130}
+                src="/logo-icon.svg"
+                alt="Solusi Teknologi Kreatif Logo"
+                width={36}
                 height={36}
+                className="w-9 h-9 shrink-0 drop-shadow-xs"
                 priority
               />
+              <div className="flex flex-col text-[13px] leading-[15px] font-bold text-white tracking-tight select-none">
+                <span>Solusi</span>
+                <span>Teknologi</span>
+                <span>Kreatif</span>
+              </div>
             </div>
-          )}
-          {isCollapsed && (
-            <div className="mx-auto text-white">
-              <FolderTree className="w-7 h-7" />
-            </div>
-          )}
-          <button
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition hidden md:block"
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? (
-              <MenuIcon className="w-5 h-5" />
-            ) : (
-              <ChevronLeft className="w-5 h-5" />
-            )}
-          </button>
 
-          {/* Mobile close button */}
-          <button
-            onClick={onCloseMobile}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition md:hidden"
-            aria-label="Close sidebar"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition hidden md:block"
+              aria-label="Collapse sidebar"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Mobile close button */}
+            <button
+              onClick={onCloseMobile}
+              className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition md:hidden"
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-2 mb-6">
+            <Image
+              src="/logo-icon.svg"
+              alt="Solusi Teknologi Kreatif Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 shrink-0 drop-shadow-xs"
+              priority
+            />
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition hidden md:block"
+              aria-label="Expand sidebar"
+            >
+              <MenuIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         {/* Group 1: Enclosed in lighter-blue rounded panel */}
         <div className="bg-stk-sidebarGroup rounded-2xl p-2.5 flex flex-col gap-1.5">
