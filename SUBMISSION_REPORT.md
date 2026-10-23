@@ -4,13 +4,11 @@
 ---
 
 ### 👤 Candidate Information
-- **Name:** [Nama Lengkap Anda]
+- **Name:** Luthfi Mirza Darsono
 - **Applied Position:** Fullstack Web Developer
 - **Date of Submission:** 23 Oktober 2026
 - **GitHub Repository:** [https://github.com/LuthfiMirza/fullstack-menu-tree-app](https://github.com/LuthfiMirza/fullstack-menu-tree-app)
 - **Repository Visibility:** Public
-- **Demo Video (Loom / Drive):** [Sertakan link rekaman video demo jika ada]
-
 ---
 
 ### 🎯 Overview & Completed Features
