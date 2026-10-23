@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { Menu as MenuIcon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MenuTree } from '../menu-tree/MenuTree';
@@ -32,9 +34,40 @@ export function AppShell() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
+      {/* Mobile Sticky Header (Matching STK Sidebar Blue) - Stays pinned when scrolling */}
+      <div className="md:hidden sticky top-0 z-40 w-full bg-stk-sidebar text-white shadow-md px-4 py-3 flex items-center justify-between border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-1 text-white hover:text-white/80 active:scale-95 transition cursor-pointer"
+            aria-label="Open sidebar"
+          >
+            <MenuIcon className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/logo-icon.svg"
+              alt="STK Logo"
+              width={26}
+              height={26}
+              className="w-6.5 h-6.5 shrink-0"
+              priority
+            />
+            <div className="flex flex-col select-none">
+              <span className="text-xs font-bold text-white tracking-tight leading-tight">
+                Solusi Teknologi Kreatif
+              </span>
+              <span className="text-[10px] font-medium text-blue-100/90 leading-tight">
+                Menu Management
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
-        <Header onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)} />
+        <Header />
 
         {/* Loading State */}
         {status === 'loading' && (
