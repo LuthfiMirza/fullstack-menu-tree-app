@@ -76,7 +76,11 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   fetchTree: async () => {
-    set({ status: 'loading', error: null });
+    // Only show full-page loading spinner on initial cold load (empty tree)
+    const isInitial = get().tree.length === 0;
+    if (isInitial) {
+      set({ status: 'loading', error: null });
+    }
     try {
       const tree = await menuApi.getTree();
       const currentActiveRootId = get().activeRootId;
@@ -87,13 +91,15 @@ export const useMenuStore = create<MenuState>((set, get) => ({
             : tree[0].id
           : null;
 
-      // Expand all nodes on initial load for optimal UX matching Figma
+      // Preserve currently expanded IDs on refetch, or expand all on initial load
+      const currentExpanded = get().expandedIds;
       const allIds = new Set(collectAllIds(tree));
+      const nextExpanded = currentExpanded.size > 0 ? currentExpanded : allIds;
 
       set({
         tree,
         activeRootId: validActiveRootId,
-        expandedIds: allIds,
+        expandedIds: nextExpanded,
         status: 'idle',
       });
 
@@ -110,7 +116,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     } catch (err: unknown) {
       const message =
         err instanceof ApiError ? err.message : 'Failed to fetch menu tree';
-      set({ status: 'error', error: message });
+      if (get().tree.length === 0) {
+        set({ status: 'error', error: message });
+      }
       get().addToast('error', message);
     }
   },
