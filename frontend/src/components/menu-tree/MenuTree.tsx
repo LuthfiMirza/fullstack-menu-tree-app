@@ -176,7 +176,7 @@ export function MenuTree() {
         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
           Menu
         </label>
-        <div className="relative max-w-sm">
+        <div className="relative w-full max-w-md">
           <select
             value={activeRootId || ''}
             onChange={(e) => {
@@ -186,7 +186,7 @@ export function MenuTree() {
                 setActiveRoot(e.target.value);
               }
             }}
-            className="w-full appearance-none bg-stk-inputBg border border-gray-200/80 rounded-field px-4 py-3 text-sm font-medium text-gray-800 focus:outline-hidden focus:border-stk-primary focus:bg-white transition cursor-pointer shadow-2xs pr-10"
+            className="w-full h-11 appearance-none bg-stk-inputBg border border-gray-200/80 rounded-field px-4 text-sm font-medium text-gray-800 focus:outline-hidden focus:border-stk-primary focus:bg-white transition cursor-pointer shadow-2xs pr-10"
           >
             {tree.map((root) => (
               <option key={root.id} value={root.id}>

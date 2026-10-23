@@ -22,7 +22,7 @@ export function SearchBox() {
   }, [localQuery, setSearchQuery]);
 
   return (
-    <div className="relative w-full max-w-md my-2">
+    <div className="relative w-full max-w-md my-2.5">
       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
         <Search className="w-4 h-4" />
       </div>
@@ -31,7 +31,7 @@ export function SearchBox() {
         value={localQuery}
         onChange={(e) => setLocalQuery(e.target.value)}
         placeholder="Search menu items..."
-        className="w-full pl-10 pr-9 py-2.5 text-sm bg-stk-inputBg text-gray-900 placeholder:text-gray-400 rounded-field border border-transparent focus:border-stk-primary focus:bg-white focus:outline-hidden transition"
+        className="w-full h-11 pl-10 pr-9 text-sm bg-stk-inputBg text-gray-900 placeholder:text-gray-400 rounded-field border border-gray-200/80 shadow-2xs focus:border-stk-primary focus:bg-white focus:outline-hidden transition"
       />
       {localQuery ? (
         <button
